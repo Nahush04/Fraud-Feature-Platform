@@ -161,4 +161,48 @@ lands — nothing here is retrofitted to look cleaner than it was.
   `docs/benchmarks.md` once the dataset and a real feature-engineering run
   exist.
 
+## Real IEEE-CIS data lands (before M5)
+
+- **Real dataset downloaded and validated**: 590,540 rows in
+  `train_transaction.csv`, 3.499% fraud rate — matches expectations, via
+  `data/download.py`.
+- **No Snowflake or Databricks account exists yet**, so the real dataset
+  couldn't go through the intended Snowflake → Databricks path. Rather than
+  stay blocked, `feature_engineering/LocalCsvFeatureJob.scala` reads the CSV
+  directly on a local Spark session and calls the exact same
+  `Features.computeVelocityFeatures` function `FeatureEngineeringJob` (the
+  real Databricks entry point) uses — so the feature logic being benchmarked
+  is identical to what will run on Databricks, only the source/sink differ
+  (local CSV → Parquet, instead of Snowflake → Delta). This produced a real
+  590,540-row output in ~25 seconds single-node, real numbers in
+  `docs/benchmarks.md` rather than synthetic ones.
+- **Parquet, not Delta, from the local Spark run.** Delta wasn't wired into
+  local `sbt run`/`sbt test` (no `delta-core` dependency, deliberately, since
+  Databricks provides Delta at runtime and the JVM side never needed to
+  write it locally before now). Converting Parquet to a real local Delta
+  table via Python's `deltalake.write_deltalake` (already a `feature_store`
+  dependency, already used in its own test fixtures) closed that gap without
+  adding a JVM dependency just for a one-off local proof run.
+  `data/feature_engineering_output` is now a real Delta table `feature_store`
+  reads exactly the way it would read Databricks's real output.
+- **M3's real benchmark used `fakeredis`, not a real Redis server** — Docker
+  isn't installed on this machine. Disclosed directly in
+  `docs/benchmarks.md`: the online-vs-cold-recompute *shape* is real (real
+  590K-row dataset, real entity distribution), the absolute online-lookup
+  number understates real Redis's network round-trip cost.
+- **M4's real numbers are modest (XGBoost PR-AUC 0.149 vs. a 0.034 no-skill
+  baseline) and that's disclosed, not smoothed over** — `feature_engineering`
+  intentionally computes 8 velocity/aggregation features from a handful of
+  raw columns, not the full 434-column raw feature set IEEE-CIS leaderboard
+  solutions engineer against. The project's point is the feature-store and
+  serving architecture, not chasing a leaderboard score; the fair comparison
+  is XGBoost vs. the logistic-regression baseline on identical features, and
+  XGBoost wins there by ~3.2x on PR-AUC.
+- **Found a live bug via a real run, not synthetic tests**: `evaluate.py`'s
+  `np.where` guard against dividing by a zero `precision + recall` still
+  evaluated the division eagerly on every element (NumPy's `where`
+  evaluates both branches), raising a `RuntimeWarning` on the real
+  precision-recall curve's edge points. Fixed by dividing by a
+  `np.where`-guarded denominator instead of the raw one.
+
 (Further entries added as M5 onward land.)

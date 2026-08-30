@@ -42,6 +42,25 @@ sbt test
 correctness of the window-function logic is the thing being tested, and that
 only means something if Spark actually executes it.
 
+## Running against real data without a Databricks account yet
+
+`LocalCsvFeatureJob` reads the real IEEE-CIS CSV directly on a local Spark
+session and calls the exact same `Features.computeVelocityFeatures` that
+`FeatureEngineeringJob` (the real Databricks entry point) calls — so the
+feature logic is identical, only the source (local CSV vs. Snowflake) and
+sink (Parquet vs. Delta) differ:
+
+```bash
+sbt "Test/runMain featureeng.LocalCsvFeatureJob ../data/raw/train_transaction.csv ../data/feature_engineering_output_parquet"
+```
+
+(Uses `Test/runMain` rather than `run` because Spark is a `Provided`
+dependency, which sbt includes on the `Test` classpath but not the default
+`Runtime` one.) On Windows, this also needs `winutils.exe`/`hadoop.dll` on
+`HADOOP_HOME`/`PATH` — Spark's local filesystem writer shells out to Hadoop's
+`Shell` utilities even for a plain local run. Real result on the full
+590,540-row dataset: ~25 seconds, single-node (`docs/benchmarks.md`).
+
 ## Run on Databricks
 
 Community Edition has no Jobs scheduling, so this runs interactively:

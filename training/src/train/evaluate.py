@@ -27,11 +27,11 @@ def _best_f1_threshold(y_true: pd.Series, scores: np.ndarray) -> tuple[float, fl
     # precision/recall have one more element than thresholds (the (1, 0) endpoint
     # with no threshold); drop it so every array lines up with a real threshold.
     precision, recall = precision[:-1], recall[:-1]
-    f1_scores = np.where(
-        (precision + recall) > 0,
-        2 * precision * recall / (precision + recall),
-        0.0,
-    )
+    denom = precision + recall
+    # np.where evaluates both branches eagerly, so dividing by `denom`
+    # directly would warn on the zero entries even though they're discarded;
+    # divide by a safe placeholder there instead.
+    f1_scores = np.where(denom > 0, 2 * precision * recall / np.where(denom > 0, denom, 1.0), 0.0)
     best_idx = int(np.argmax(f1_scores))
     return thresholds[best_idx], f1_scores[best_idx], precision[best_idx], recall[best_idx]
 

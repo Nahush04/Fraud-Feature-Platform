@@ -3,11 +3,14 @@
 A real-time fraud-scoring platform built around a proper feature store, on the
 IEEE-CIS Fraud Detection dataset (~590K transactions, ~3.5% fraud).
 
-**Status: M0-M4 built (ingestion CLI, Scala/Spark feature job, Python feature
-store, XGBoost+MLflow training — all with passing test suites, M4 currently
-tested against synthetic data pending the real IEEE-CIS download). M5
-onward in progress. See `docs/decisions.md` for what's real vs. planned at
-any point in time.**
+**Status: M0-M4 built and validated against the real IEEE-CIS dataset
+(590,540 real transactions) — feature engineering, feature store, and
+XGBoost training all produce real benchmark numbers in `docs/benchmarks.md`,
+not synthetic ones. Snowflake and Databricks accounts aren't set up yet, so
+the real run currently goes local-CSV → local Spark → local Delta instead of
+Snowflake → Databricks → Delta; `docs/decisions.md` documents that
+substitution and what changes once those accounts exist. M5 (Kubernetes
+serving) onward in progress.**
 
 ## What this project is
 
