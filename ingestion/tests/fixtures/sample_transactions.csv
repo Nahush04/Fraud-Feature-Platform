@@ -1,0 +1,6 @@
+TransactionID,isFraud,TransactionDT,TransactionAmt,ProductCD,card4,P_emaildomain
+1000001,0,86400,68.5,W,visa,gmail.com
+1000002,1,86500,120.0,W,mastercard,yahoo.com
+1000003,0,86700,29.99,C,visa,
+1000004,0,87000,500.0,R,discover,hotmail.com
+1000005,1,87200,15.0,W,visa,gmail.com

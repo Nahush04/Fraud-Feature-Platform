@@ -1,0 +1,10 @@
+# Copy to config.yaml (gitignored). Secrets (password) should go in
+# environment variables instead: SNOWFLAKE_PASSWORD, and any of the others
+# below can be overridden the same way (SNOWFLAKE_ACCOUNT, SNOWFLAKE_USER,
+# SNOWFLAKE_ROLE, SNOWFLAKE_WAREHOUSE, SNOWFLAKE_DATABASE, SNOWFLAKE_SCHEMA).
+account: "xy12345.us-east-1"
+user: "FRAUD_INGEST_USER"
+role: "FRAUD_INGEST_ROLE"
+warehouse: "FRAUD_WH"
+database: "FRAUD"
+schema: "RAW"
