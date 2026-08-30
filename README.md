@@ -3,9 +3,11 @@
 A real-time fraud-scoring platform built around a proper feature store, on the
 IEEE-CIS Fraud Detection dataset (~590K transactions, ~3.5% fraud).
 
-**Status: M0-M3 built (ingestion CLI, Scala/Spark feature job, Python feature
-store — all with passing test suites). M4 onward in progress. See
-`docs/decisions.md` for what's real vs. planned at any point in time.**
+**Status: M0-M4 built (ingestion CLI, Scala/Spark feature job, Python feature
+store, XGBoost+MLflow training — all with passing test suites, M4 currently
+tested against synthetic data pending the real IEEE-CIS download). M5
+onward in progress. See `docs/decisions.md` for what's real vs. planned at
+any point in time.**
 
 ## What this project is
 

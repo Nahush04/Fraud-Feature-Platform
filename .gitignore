@@ -15,5 +15,7 @@ data/*.csv
 config.yaml
 .DS_Store
 mlruns/
+mlruns.db
 mlartifacts/
+*.db-journal
 load_testing/results/*.html

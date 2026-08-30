@@ -115,4 +115,50 @@ lands — nothing here is retrofitted to look cleaner than it was.
   for it; tested directly for the same leakage property `feature_engineering`
   proves on the Spark side (`test_adding_a_future_history_row_does_not_change_an_earlier_events_join`).
 
-(Further entries added as M4 onward land.)
+## M4 — model training
+
+- **The offline feature table doubles as the training frame directly.**
+  `feature_engineering`'s Delta output carries `isFraud` through unchanged
+  and each row's features are already computed as of that exact
+  transaction's time, so no separate point-in-time join is needed to build
+  a training set here — `fstore.pit_join` is for scoring/labeling an event
+  that isn't already a row in the table (a different use case than training
+  on the table itself).
+- **Walk-forward (time-sliced) holdout, never a random split.** A random
+  split would let the model train on transactions that happen after some of
+  its own test transactions — something it will never see in production, so
+  a model validated that way looks better offline than it will ever perform
+  live. `time_based_split` sorts by `TransactionDT` and takes the earliest
+  `1 - test_fraction` as train, matching the walk-forward discipline already
+  used in the Stock-Prediction-with-GANs project.
+- **PR-AUC as the primary metric, not accuracy or plain ROC-AUC.** Fraud is
+  ~3.5% positive; a model that always predicts "not fraud" would still score
+  ~96.5% accuracy and a deceptively fine-looking ROC-AUC. PR-AUC and a
+  best-threshold F1 (tuned on the holdout's own precision-recall curve, not
+  a fixed 0.5 cutoff) are reported instead, alongside ROC-AUC for context.
+- **XGBoost gets raw NaN features; the logistic-regression baseline gets
+  median-imputed ones.** A feature like `entity_amt_zscore` being null for
+  an entity's first transaction is a real, meaningful state ("no prior
+  history exists"), not noise to be imputed away — XGBoost can route missing
+  values through a learned split, so it sees that state directly.
+  Logistic regression has no such mechanism, so it gets `SimpleImputer`
+  (median) ahead of scaling, which is a real, disclosed difference in how
+  the two models see the same table, not an oversight.
+- **Real bug caught here: MLflow's local filesystem tracking backend
+  (`./mlruns`) is now in maintenance mode and raises by default** on a
+  freshly installed `mlflow` (`MLFLOW_ALLOW_FILE_STORE` opt-out required).
+  Found when the test suite failed immediately, not from reading MLflow's
+  changelog. Fixed by defaulting to a local sqlite backend
+  (`sqlite:///mlruns.db`) both in the CLI and in tests, only when the caller
+  hasn't already pointed `MLFLOW_TRACKING_URI` somewhere real.
+- **Tested against a synthetic, deliberately-imbalanced, deliberately-
+  separable dataset (`tests/conftest.py`), not real IEEE-CIS data.** The
+  real dataset was still downloading at the time this milestone was built;
+  the synthetic generator exists so every test here exercises a real model
+  fit and real metric computation (not mocks), and is a stand-in the same
+  way `feature_engineering`'s local Spark tests stand in for a real
+  Databricks run. Real IEEE-CIS numbers replace the synthetic ones in
+  `docs/benchmarks.md` once the dataset and a real feature-engineering run
+  exist.
+
+(Further entries added as M5 onward land.)
