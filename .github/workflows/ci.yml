@@ -14,3 +14,15 @@ jobs:
           python-version: "3.11"
       - run: pip install -e "./ingestion[dev]"
       - run: pytest ingestion/tests -q
+
+  feature-engineering-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: sbt/setup-sbt@v1
+      - run: sbt -v test
+        working-directory: feature_engineering
