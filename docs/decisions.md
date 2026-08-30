@@ -84,4 +84,35 @@ lands — nothing here is retrofitted to look cleaner than it was.
   cell. `main` exists to document the intended CLI shape and is what a paid
   workspace with Jobs would actually invoke via `spark-submit`.
 
-(Further entries added as M3 onward land.)
+## M3 — feature store
+
+- **`deltalake` (delta-rs) instead of PySpark for reading the offline
+  table.** This component never needs a JVM; the only contract between
+  `feature_engineering` (Scala/Spark, writes Delta) and `feature_store`
+  (Python, reads Delta) is the Delta table format itself.
+- **Real bug caught by the test suite:** `materialize()` originally built
+  each entity's feature dict with `DataFrame.iterrows()`. Because
+  `entity_amt_zscore` is nullable (NaN for an entity's first two
+  transactions), pandas silently upcasts the *entire row* — including the
+  integer `card1` entity ID — to float when iterating row-wise, turning
+  entity `100` into `100.0` and breaking every online-store key lookup for
+  that entity. Fixed by switching to `DataFrame.to_dict(orient="records")`,
+  which reads each column independently and keeps its own dtype. Caught by
+  `test_materialize_writes_only_latest_row_per_entity` failing with a
+  `NoneType` lookup miss, not by inspection — exactly the kind of
+  cross-column-dtype bug a real feature store has to guard against.
+- **The "cold recompute" benchmark comparator is pandas over the offline
+  dataframe, not a live Databricks/Spark query.** This package has no Spark
+  dependency, so `benchmark.py`'s cold path (filter + sort + take-last on
+  the in-memory offline history) stands in for what a real cold path would
+  cost — the online-vs-cold *shape* of the result is real, the absolute
+  numbers understate what an actual Spark cluster query would cost, and
+  that's stated here rather than presented as a Databricks number.
+- **Point-in-time join via `pandas.merge_asof(..., allow_exact_matches=False)`,
+  per entity via `by=`.** Chosen over a manual groupby+searchsorted
+  implementation because merge_asof already does exactly this (as-of match,
+  strictly-before via `allow_exact_matches=False`) and is the standard tool
+  for it; tested directly for the same leakage property `feature_engineering`
+  proves on the Spark side (`test_adding_a_future_history_row_does_not_change_an_earlier_events_join`).
+
+(Further entries added as M4 onward land.)

@@ -19,4 +19,7 @@ This is local[2] correctness verification, not a Databricks throughput
 number — job runtime vs. real input row count on Databricks Community
 Edition (single-node) gets added here once M2's real Databricks run happens.
 
-_(M1 Snowflake load-throughput numbers land once the trial account is set up.)_
+_(M1 Snowflake load-throughput numbers, and M3's real online-vs-cold-recompute
+lookup benchmark against the actual IEEE-CIS feature history, land once the
+trial account is set up and a real Databricks run has produced real
+`feature_engineering` output to materialize.)_
