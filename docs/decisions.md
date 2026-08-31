@@ -323,4 +323,16 @@ lands — nothing here is retrofitted to look cleaner than it was.
   the real queue, real approval, real audit trail (`FLAGGED` then
   `APPROVED`), clean teardown (no leftover processes or scratch db).
 
-(Further entries added as M8.)
+## M8 — docs and portfolio packaging
+
+- **The top-level README leads with the skill-evidence table and the "more
+  than a training script" argument**, not a milestone checklist — the
+  audience for this README (an interviewer, a hiring manager skimming
+  GitHub) cares about what's demonstrated and proven, not the build order.
+  The build-order narrative stays in this file.
+- **The master portfolio entry (added to
+  `source_material/Nahush_Bhamre_MASTER_PORTFOLIO.md`) was written only
+  after the real end-to-end run passed**, per the original build plan —
+  every claim in it (590,540 real transactions, 29.4x speedup, the three
+  real bugs, the honest PR-AUC) is something this project's own
+  `docs/benchmarks.md`/`docs/decisions.md` can back up line for line.
