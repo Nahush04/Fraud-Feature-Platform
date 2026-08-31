@@ -107,5 +107,22 @@ multi-pod, HPA-scaled p50/p95/p99 and pod-count-over-time numbers (via
 `load_testing/locustfile.py`) replace this once Docker/minikube are
 available on a machine that has them.
 
-_(M1 Snowflake load-throughput numbers land once the Snowflake trial account
-is set up.)_
+## M6 — review_app (Django + MySQL)
+
+`python manage.py test review`, sqlite (see `docs/decisions.md` for why),
+2026-08-30:
+
+```
+Ran 15 tests in 8.7s
+OK
+```
+
+Additionally verified against a real running dev server over real HTTP:
+login (session cookie + CSRF), queue page (showed the real seeded flag),
+detail page, approve action, and the resulting audit trail (`FLAGGED` then
+`APPROVED`, correct analyst username) — all confirmed by inspecting the
+actual HTML response, not asserted through Django's test client alone.
+
+_(Real MySQL numbers land once Docker/a MySQL server is available. M1
+Snowflake load-throughput numbers land once the Snowflake trial account is
+set up.)_

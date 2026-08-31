@@ -249,4 +249,38 @@ lands — nothing here is retrofitted to look cleaner than it was.
   process latency, not a production/k8s number, and not the throughput a
   multi-pod HPA-scaled deployment would sustain.
 
-(Further entries added as M6 onward land.)
+## M6 — analyst review app (Django + MySQL)
+
+- **MySQL is the configured default backend (via PyMySQL, not
+  mysqlclient)** — PyMySQL is pure Python, so it installs without a C
+  compiler or local MySQL client headers, which mysqlclient needs. No MySQL
+  server is available on this dev machine, so `DJANGO_USE_SQLITE=true`
+  (the default) swaps in sqlite for local dev and tests — the same kind of
+  documented substitution as `fakeredis` for Redis and local Spark for
+  Databricks elsewhere in this project. Every model, migration, and query is
+  plain Django ORM, so nothing here is backend-specific; `docker compose up
+  -d mysql` plus `DJANGO_USE_SQLITE=false` is the real path once available.
+- **`AuditLogEntry.delete()` raises `NotImplementedError`, and the admin's
+  `has_delete_permission` returns `False` for it too.** "Append-only by
+  convention" isn't append-only — enforcing it at the model layer means a
+  future view, script, or admin action can't silently violate the audit
+  guarantee.
+- **`services.py` (not `views.py`) owns the business logic** (`create_flag`,
+  `decide_flag`), specifically so the M7 integration point — `serving/`'s
+  Flask API writing a high-risk score into this queue — can call it
+  directly (via a script or a small internal call) without going through
+  HTTP or duplicating the flagging logic in a second place.
+- **`decide_flag` refuses to act on an already-decided flag** (raises
+  `ValueError` if not `PENDING`), tested directly
+  (`test_deciding_twice_never_produces_a_third_audit_entry`) — a
+  double-submitted approve/reject must not produce a second audit entry or
+  silently no-op past the first decision.
+- **Verified against a real running server, not just Django's test
+  client**: started the real dev server, logged in over real HTTP
+  (cookie-based session, CSRF token extracted and replayed), fetched the
+  real queue page, approved a real seeded flag, and confirmed the audit
+  trail showed both `FLAGGED` and `APPROVED` entries with the analyst's
+  username attached — the same "run it for real, not just unit tests"
+  discipline used for `serving/`'s smoke test.
+
+(Further entries added as M7 onward land.)

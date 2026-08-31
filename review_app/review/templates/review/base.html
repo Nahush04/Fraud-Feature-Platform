@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{% block title %}Fraud Review{% endblock %}</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; color: #1a1a1a; }
+    table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+    th, td { text-align: left; padding: 0.5rem; border-bottom: 1px solid #ddd; }
+    .score { font-variant-numeric: tabular-nums; }
+    .status-PENDING { color: #b45309; }
+    .status-APPROVED { color: #15803d; }
+    .status-REJECTED { color: #b91c1c; }
+    form.decision { display: inline; }
+    button { cursor: pointer; padding: 0.3rem 0.8rem; }
+    nav { margin-bottom: 1rem; }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="{% url 'queue' %}">Review queue</a>
+    {% if user.is_authenticated %}
+      &middot; {{ user.username }} &middot; <a href="{% url 'logout' %}">Log out</a>
+    {% endif %}
+  </nav>
+  {% block content %}{% endblock %}
+</body>
+</html>

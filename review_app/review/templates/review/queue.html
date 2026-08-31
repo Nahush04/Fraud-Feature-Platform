@@ -1,0 +1,24 @@
+{% extends "review/base.html" %}
+{% block title %}Review queue{% endblock %}
+{% block content %}
+<h1>Flagged transactions ({{ flags|length }} pending)</h1>
+<table>
+  <thead>
+    <tr><th>Transaction</th><th>Card</th><th>Amount</th><th>Score</th><th>Flagged at</th><th></th></tr>
+  </thead>
+  <tbody>
+    {% for flag in flags %}
+    <tr>
+      <td><a href="{% url 'transaction_detail' flag.id %}">{{ flag.transaction.transaction_id }}</a></td>
+      <td>{{ flag.transaction.card1 }}</td>
+      <td>{{ flag.transaction.amount }}</td>
+      <td class="score">{{ flag.transaction.score|floatformat:4 }}</td>
+      <td>{{ flag.created_at }}</td>
+      <td><a href="{% url 'transaction_detail' flag.id %}">Review</a></td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="6">Nothing pending.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

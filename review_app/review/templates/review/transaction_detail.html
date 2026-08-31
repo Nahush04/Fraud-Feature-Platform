@@ -1,0 +1,36 @@
+{% extends "review/base.html" %}
+{% block title %}Transaction {{ flag.transaction.transaction_id }}{% endblock %}
+{% block content %}
+<h1>Transaction {{ flag.transaction.transaction_id }}</h1>
+<p>
+  Card: {{ flag.transaction.card1 }} &middot;
+  Amount: {{ flag.transaction.amount }} &middot;
+  Score: <span class="score">{{ flag.transaction.score|floatformat:4 }}</span>
+  (threshold at flag time: {{ flag.threshold_at_flag_time|floatformat:4 }}) &middot;
+  Status: <span class="status-{{ flag.status }}">{{ flag.get_status_display }}</span>
+</p>
+
+{% if flag.status == "PENDING" %}
+<form class="decision" method="post" action="{% url 'decide' flag.id %}">
+  {% csrf_token %}
+  <input type="text" name="note" placeholder="note (optional)">
+  <button type="submit" name="decision" value="approve">Approve</button>
+  <button type="submit" name="decision" value="reject">Reject</button>
+</form>
+{% endif %}
+
+<h2>Audit trail</h2>
+<table>
+  <thead><tr><th>When</th><th>Action</th><th>By</th><th>Note</th></tr></thead>
+  <tbody>
+    {% for entry in audit_entries %}
+    <tr>
+      <td>{{ entry.created_at }}</td>
+      <td>{{ entry.get_action_display }}</td>
+      <td>{{ entry.actor.username|default:"system" }}</td>
+      <td>{{ entry.note }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
