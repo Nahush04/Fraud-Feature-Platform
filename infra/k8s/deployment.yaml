@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fraud-serving
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: fraud-serving
+  template:
+    metadata:
+      labels:
+        app: fraud-serving
+    spec:
+      containers:
+        - name: fraud-serving
+          image: fraud-serving:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: fraud-serving-config
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          # readinessProbe checks the online store is reachable -- a pod that
+          # can't reach Redis shouldn't get traffic yet. livenessProbe never
+          # touches Redis: a Redis blip should mean "wait", not "restart the
+          # pod and lose whatever it was doing".
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10

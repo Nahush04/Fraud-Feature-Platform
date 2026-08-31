@@ -205,4 +205,48 @@ lands — nothing here is retrofitted to look cleaner than it was.
   precision-recall curve's edge points. Fixed by dividing by a
   `np.where`-guarded denominator instead of the raw one.
 
-(Further entries added as M5 onward land.)
+## M5 — real-time serving on Kubernetes
+
+- **`/healthz` never touches Redis or the model; `/readyz` does.** A k8s
+  liveness probe failing means "kill and restart this pod" — that should
+  never be triggered by a downstream dependency having a bad moment.
+  Readiness failing just means "stop routing traffic here for now," which is
+  the correct response to Redis being briefly unreachable.
+- **`serving` depends on `feature_store` for `RedisOnlineStore` rather than
+  re-implementing the Redis key/serialization scheme.** Both processes must
+  agree on the exact key format and JSON shape; duplicating that logic would
+  be a correctness risk (the two copies drifting) for no real benefit.
+- **No Docker, minikube, or kubectl on this dev machine.** The Flask app,
+  its model-loading/feature-building logic, and the full test suite are
+  real and verified (including a real trained-model round trip and a real
+  running HTTP server — see the bug below); the Dockerfile and k8s manifests
+  are written and internally consistent but not yet built/deployed for
+  real. That's a real gap, disclosed here and in `README.md`'s status line,
+  not glossed over — deploying to an actual minikube cluster and running the
+  Locust load test is the next real step once Docker is available.
+- **Real bug found only by running a real HTTP request against a real
+  trained model** (not caught by earlier unit tests, which used a stub
+  model): `build_feature_row` left a missing online feature (JSON `null`)
+  as Python `None` in the single-row DataFrame; pandas keeps that as
+  `object` dtype rather than `NaN`, and XGBoost rejects `object`-dtype
+  columns outright regardless of whether the underlying values are numeric.
+  Fixed by casting the constructed row to `float64`; a regression test
+  (`test_build_feature_row_is_all_numeric_dtype_even_with_a_stored_null_feature`)
+  now covers it directly. This is exactly why the smoke test against a real
+  server was worth doing even without a full k8s deploy — a stub model in
+  unit tests can't catch a real XGBoost dtype constraint.
+- **The trained model artifact (`model/model.json`, `model/meta.json`) is
+  committed, not gitignored.** Unlike `mlruns.db` (regenerable local
+  tracking state) or `data/raw` (large, license-gated dataset), this is a
+  small (~750KB) real artifact the Docker image needs at build time — anyone
+  cloning the repo can build and run `serving` without first re-running the
+  full training pipeline.
+- **Real (if partial) latency numbers exist despite no k8s**: a real
+  Werkzeug dev server, loaded with the real trained model and real
+  materialized IEEE-CIS data (via `fakeredis`, single process, no gunicorn
+  workers, no k8s), answered real HTTP requests. Recorded in
+  `docs/benchmarks.md` with that scope stated explicitly — single dev-server
+  process latency, not a production/k8s number, and not the throughput a
+  multi-pod HPA-scaled deployment would sustain.
+
+(Further entries added as M6 onward land.)

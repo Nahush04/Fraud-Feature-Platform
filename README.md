@@ -3,14 +3,17 @@
 A real-time fraud-scoring platform built around a proper feature store, on the
 IEEE-CIS Fraud Detection dataset (~590K transactions, ~3.5% fraud).
 
-**Status: M0-M4 built and validated against the real IEEE-CIS dataset
-(590,540 real transactions) — feature engineering, feature store, and
-XGBoost training all produce real benchmark numbers in `docs/benchmarks.md`,
-not synthetic ones. Snowflake and Databricks accounts aren't set up yet, so
-the real run currently goes local-CSV → local Spark → local Delta instead of
-Snowflake → Databricks → Delta; `docs/decisions.md` documents that
-substitution and what changes once those accounts exist. M5 (Kubernetes
-serving) onward in progress.**
+**Status: M0-M5 built and validated against the real IEEE-CIS dataset
+(590,540 real transactions) — feature engineering, feature store, XGBoost
+training, and the Flask serving API all produce real benchmark numbers in
+`docs/benchmarks.md`, not synthetic ones. Three real, disclosed gaps remain:
+no Snowflake/Databricks account yet (real run goes local-CSV → local Spark →
+local Delta instead), no Docker/minikube on this dev machine yet (serving's
+Dockerfile and k8s manifests are written and internally consistent but not
+yet built/deployed), so the M5 numbers are a single dev-server process, not
+a real k8s deployment. `docs/decisions.md` documents each substitution and
+what changes once those tools/accounts exist. M6 (Django + MySQL review app)
+onward in progress.**
 
 ## What this project is
 

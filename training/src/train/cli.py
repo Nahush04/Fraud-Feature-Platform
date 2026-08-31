@@ -7,13 +7,15 @@ a walk-forward holdout, tracked in MLflow, reported honestly side by side.
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import sys
+from pathlib import Path
 
 import mlflow
 
 from train.baseline import train_baseline
-from train.data import load_training_frame, select_feature_matrix, time_based_split
+from train.data import FEATURE_COLUMNS, load_training_frame, select_feature_matrix, time_based_split
 from train.evaluate import evaluate, format_comparison
 from train.pipeline import train_xgboost
 from train.tracking import run_tracked
@@ -27,6 +29,7 @@ def _build_parser() -> argparse.ArgumentParser:
     run_p.add_argument("--delta-path", required=True)
     run_p.add_argument("--test-fraction", type=float, default=0.2)
     run_p.add_argument("--experiment-name", default="fraud-detection")
+    run_p.add_argument("--model-dir", help="if set, save the trained XGBoost model + serving metadata here")
 
     return parser
 
@@ -61,6 +64,25 @@ def run(argv: list[str]) -> int:
     print(f"MLflow runs: baseline={baseline_run_id} xgboost={xgb_run_id}")
     print()
     print(format_comparison(baseline_eval, xgb_eval))
+
+    if args.model_dir:
+        model_dir = Path(args.model_dir)
+        model_dir.mkdir(parents=True, exist_ok=True)
+        xgb_model.save_model(str(model_dir / "model.json"))
+        (model_dir / "meta.json").write_text(
+            json.dumps(
+                {
+                    "feature_columns": FEATURE_COLUMNS,
+                    "decision_threshold": float(xgb_eval.best_threshold),
+                    "trained_on_rows": len(train_df),
+                    "pr_auc": float(xgb_eval.pr_auc),
+                    "mlflow_run_id": xgb_run_id,
+                },
+                indent=2,
+            )
+        )
+        print(f"\nsaved model + metadata to {model_dir}")
+
     return 0
 
 

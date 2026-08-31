@@ -1,0 +1,17 @@
+{
+  "feature_columns": [
+    "TransactionAmt",
+    "entity_txn_count_1h",
+    "entity_txn_count_24h",
+    "entity_prior_txn_count",
+    "entity_prior_amt_mean",
+    "entity_prior_amt_stddev",
+    "entity_amt_zscore",
+    "entity_time_since_last_txn",
+    "email_txn_count_24h"
+  ],
+  "decision_threshold": 0.7489652037620544,
+  "trained_on_rows": 472432,
+  "pr_auc": 0.1493296620793482,
+  "mlflow_run_id": "445aebeb86d644bd81b67041b2fbe469"
+}

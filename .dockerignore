@@ -1,0 +1,15 @@
+**/.venv/
+**/venv/
+**/__pycache__/
+**/*.pyc
+**/.pytest_cache/
+**/*.egg-info/
+**/target/
+**/project/target/
+**/project/project/
+**/.bsp/
+data/
+mlruns/
+mlruns.db
+mlartifacts/
+.git/

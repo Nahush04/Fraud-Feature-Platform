@@ -81,5 +81,31 @@ model, not maximizing this specific score — the comparison that matters here
 is XGBoost vs. its own baseline on the same limited features, and it wins
 clearly.
 
+## M5 — real-time serving, single dev-server process (no k8s yet)
+
+2026-08-30. Real trained model (`model/`) + real materialized IEEE-CIS data
+(`fakeredis`, in-process — no real Redis, no Docker on this machine) behind
+a real Werkzeug dev server (single process, no gunicorn workers), driven by
+a real HTTP client (`requests`) with 8 concurrent threads, 100 requests,
+`card1=7919` (the busiest real entity, 14,932 transactions):
+
+```
+statuses: {200}
+p50=75.55ms p95=80.33ms p99=81.54ms max=81.57ms
+```
+
+Single request, no concurrency, same entity — from the raw `/score`
+response's own `latency_ms` breakdown:
+
+```
+feature_fetch: 0.27-6.1 ms   inference: 10.6-33.2 ms   total: 10.9-39.4 ms
+```
+
+This is a single-process dev-server ceiling, not a production number — no
+gunicorn worker pool, no k8s, no HPA, no real Redis network round trip. Real
+multi-pod, HPA-scaled p50/p95/p99 and pod-count-over-time numbers (via
+`load_testing/locustfile.py`) replace this once Docker/minikube are
+available on a machine that has them.
+
 _(M1 Snowflake load-throughput numbers land once the Snowflake trial account
 is set up.)_
