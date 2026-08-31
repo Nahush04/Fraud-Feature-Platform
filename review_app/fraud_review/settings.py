@@ -146,6 +146,11 @@ STATIC_URL = 'static/'
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'queue'
 
+# Shared secret the serving/ Flask API presents when it flags a transaction
+# into this queue (see review/api.py) -- a machine-to-machine credential,
+# not tied to any analyst's login.
+FLAG_INGEST_API_KEY = os.environ.get("FLAG_INGEST_API_KEY", "dev-local-key-change-me")
+
 
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration

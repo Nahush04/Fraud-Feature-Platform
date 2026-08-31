@@ -24,10 +24,17 @@ training/ (Python: XGBoost + MLflow)
 serving/ (Flask, Docker, Kubernetes/minikube)
    - /score: Redis feature fetch -> model inference -> score + latency breakdown
    - Deployment + Service + HPA + readiness/liveness probes
+   - flagged? -> best-effort HTTP POST to review_app's /api/flags/ (X-API-Key)
    v
 review_app/ (Django + MySQL)
+   - /api/flags/: machine-to-machine flag ingest (serving/ calls this)
    - flagged-transaction queue, analyst approve/reject, append-only audit trail
 ```
+
+`scripts/end_to_end_demo.py` runs this whole loop for real: real trained
+model, real materialized IEEE-CIS data, two real servers over real HTTP,
+from a scored transaction through to an analyst's decision and its audit
+trail entry.
 
 ## Point-in-time correctness
 

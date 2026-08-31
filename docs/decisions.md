@@ -283,4 +283,44 @@ lands — nothing here is retrofitted to look cleaner than it was.
   username attached — the same "run it for real, not just unit tests"
   discipline used for `serving/`'s smoke test.
 
-(Further entries added as M7 onward land.)
+## M7 — end-to-end integration
+
+- **A webhook, not a shared database.** `serving` (Flask) and `review_app`
+  (Django) stay decoupled: `serving` doesn't import Django, `review_app`
+  doesn't import Flask/XGBoost. A flagged score triggers a synchronous,
+  best-effort HTTP POST (`serving/review_client.py`) to `review_app`'s
+  `/api/flags/` (`review/api.py`), gated by a shared `X-API-Key` rather than
+  an analyst session — a machine-to-machine credential, not a login.
+- **The notification is best-effort, not guaranteed.** `/score`'s job is to
+  return a score fast; a `review_app` outage shouldn't take scoring down
+  with it. A short timeout (1s) and caught exceptions mean a failed
+  notification just returns `notified_review_queue: false` in the response
+  rather than a 500 — but that also means a missed flag is a real, silent
+  gap in this design, not glossed over. A production build would want a
+  retry queue (e.g. an outbox table + background sender) instead of a
+  synchronous best-effort call; out of scope for this project.
+- **`transaction_id` is optional on `/score`, synthesized (`{card1}-{uuid}`)
+  when absent**, so M5's original tests (written before M7 existed) keep
+  working unchanged, while a real caller can supply its own ID for
+  idempotency (`review_app`'s `Transaction.transaction_id` is unique, so a
+  duplicate flag attempt is a 409, not a silent double-entry).
+- **The real (not synthetic) end-to-end demo (`scripts/end_to_end_demo.py`)
+  doesn't fabricate a "flagged" example.** With only 8 engineered features
+  (see M4's disclosed modest PR-AUC), most real high-amount transactions
+  for most real entities don't actually clear the tuned decision threshold
+  — an early manual attempt (`card1=7919`, `amount=4999.99`) scored 0.229,
+  well under the 0.749 threshold. Rather than lower the threshold to force
+  a demo "success," the script searches the real materialized data for a
+  real (entity, amount) pair whose real model score genuinely clears the
+  real threshold, and asserts on that. This is the same
+  honesty-over-optics discipline as `docs/benchmarks.md` throughout: a demo
+  that can fail loudly is worth more than one that's rigged to pass.
+- **Verified for real, twice**: once manually (two servers started by hand,
+  curl + real HTTP calls, described in this file's earlier commits) and
+  once via the committed, rerunnable `scripts/end_to_end_demo.py`, which
+  passed on a clean run — Django migrate, both servers up, real score
+  (0.8038 for `card1=5812`, `amount=50`, threshold 0.7490), real flag in
+  the real queue, real approval, real audit trail (`FLAGGED` then
+  `APPROVED`), clean teardown (no leftover processes or scratch db).
+
+(Further entries added as M8.)

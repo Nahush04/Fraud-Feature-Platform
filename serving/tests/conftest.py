@@ -22,14 +22,33 @@ class StubModel:
         return np.array([[1 - fraud_prob, fraud_prob]])
 
 
+class RecordingNotifier:
+    """Stand-in for notify_review_queue: records every call instead of
+    making a real HTTP request, so tests can assert on wiring without a
+    live review_app.
+    """
+
+    def __init__(self):
+        self.calls = []
+
+    def __call__(self, **kwargs):
+        self.calls.append(kwargs)
+        return True
+
+
 @pytest.fixture
 def redis_client():
     return fakeredis.FakeStrictRedis()
 
 
 @pytest.fixture
-def app(redis_client):
-    return create_app(redis_client=redis_client, model=StubModel(), meta=META)
+def notifier():
+    return RecordingNotifier()
+
+
+@pytest.fixture
+def app(redis_client, notifier):
+    return create_app(redis_client=redis_client, model=StubModel(), meta=META, notify_fn=notifier)
 
 
 @pytest.fixture

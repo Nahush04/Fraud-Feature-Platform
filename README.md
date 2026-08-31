@@ -3,18 +3,19 @@
 A real-time fraud-scoring platform built around a proper feature store, on the
 IEEE-CIS Fraud Detection dataset (~590K transactions, ~3.5% fraud).
 
-**Status: M0-M6 built and validated against the real IEEE-CIS dataset
-(590,540 real transactions) — feature engineering, feature store, XGBoost
-training, the Flask serving API, and the Django+MySQL review app all produce
-real benchmark numbers in `docs/benchmarks.md`, not synthetic ones. Real,
-disclosed gaps remain: no Snowflake/Databricks account yet (real run goes
-local-CSV → local Spark → local Delta instead), no Docker/minikube/MySQL
-server on this dev machine yet (serving's Dockerfile and k8s manifests, and
-review_app's MySQL backend, are written and correct but not yet
-built/deployed against real infra — sqlite and a single dev-server process
-stand in, disclosed everywhere this applies). `docs/decisions.md` documents
-each substitution and what changes once those tools/accounts exist. M7
-(end-to-end integration) onward in progress.**
+**Status: M0-M7 built and validated against the real IEEE-CIS dataset
+(590,540 real transactions). The full loop — Snowflake-style ingestion →
+Spark feature engineering → feature store → XGBoost scoring → Kubernetes-
+ready Flask serving → Django+MySQL review queue → analyst decision → audit
+trail — runs for real end-to-end via `scripts/end_to_end_demo.py`, not just
+as separate unit-tested pieces. Real, disclosed gaps remain: no
+Snowflake/Databricks account yet (real run goes local-CSV → local Spark →
+local Delta instead), no Docker/minikube/MySQL server on this dev machine
+yet (serving's Dockerfile and k8s manifests, and review_app's MySQL backend,
+are written and correct but not yet built/deployed against real infra —
+sqlite and real dev-server processes stand in, disclosed everywhere this
+applies). `docs/decisions.md` documents each substitution and what changes
+once those tools/accounts exist. M8 (final docs/packaging) remaining.**
 
 ## What this project is
 

@@ -14,16 +14,19 @@ from __future__ import annotations
 
 import os
 import time
+import uuid
 
 import redis
 from flask import Flask, jsonify, request
 
 from fstore.online import RedisOnlineStore
 from serving.model import build_feature_row, load_model
+from serving.review_client import notify_review_queue
 
 
-def create_app(redis_client=None, model=None, meta=None) -> Flask:
+def create_app(redis_client=None, model=None, meta=None, notify_fn=None) -> Flask:
     app = Flask(__name__)
+    app.config["notify_fn"] = notify_fn or notify_review_queue
 
     app.config["redis_client"] = redis_client or redis.Redis.from_url(
         os.environ.get("REDIS_URL", "redis://localhost:6379/0")
@@ -54,6 +57,7 @@ def create_app(redis_client=None, model=None, meta=None) -> Flask:
         transaction_amt = payload.get("TransactionAmt")
         if entity_id is None or transaction_amt is None:
             return jsonify(error="card1 and TransactionAmt are required"), 400
+        transaction_id = payload.get("transaction_id") or f"{entity_id}-{uuid.uuid4().hex[:12]}"
 
         store = RedisOnlineStore(app.config["redis_client"])
 
@@ -65,9 +69,23 @@ def create_app(redis_client=None, model=None, meta=None) -> Flask:
         fraud_score = float(app.config["model"].predict_proba(features)[0][1])
         t2 = time.perf_counter()
 
+        threshold = app.config["meta"]["decision_threshold"]
+        flagged = fraud_score >= threshold
+        notified = False
+        if flagged:
+            notified = app.config["notify_fn"](
+                transaction_id=transaction_id,
+                card1=entity_id,
+                amount=transaction_amt,
+                score=fraud_score,
+                threshold=threshold,
+            )
+
         return jsonify(
+            transaction_id=transaction_id,
             score=fraud_score,
-            flagged=fraud_score >= app.config["meta"]["decision_threshold"],
+            flagged=flagged,
+            notified_review_queue=notified,
             entity_known=vector is not None,
             latency_ms={
                 "feature_fetch": round((t1 - t0) * 1000, 4),

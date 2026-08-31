@@ -123,6 +123,28 @@ detail page, approve action, and the resulting audit trail (`FLAGGED` then
 `APPROVED`, correct analyst username) — all confirmed by inspecting the
 actual HTML response, not asserted through Django's test client alone.
 
+## M7 — end-to-end integration, real run
+
+`scripts/end_to_end_demo.py`, 2026-08-30 — real Django server + real Flask
+server, real trained model, real materialized IEEE-CIS data:
+
+```
+card1=5812 amount=50.0 model_score=0.8038 threshold=0.7490
+/score response: flagged=True, notified_review_queue=True
+found in queue as flag id 1
+audit trail: FLAGGED then APPROVED, note "end-to-end demo"
+clean teardown: no leftover processes, scratch db removed
+END-TO-END DEMO PASSED
+```
+
+Note on how the (entity, amount) pair was chosen: not fabricated to force a
+"flagged" outcome. An earlier manual attempt (`card1=7919`, a $4,999.99
+transaction) scored 0.229 — well under threshold, given the model's modest
+real PR-AUC (see M4). The script searches real materialized data for a
+combination whose real score genuinely clears the real threshold, and the
+demo's assertions would fail loudly if none existed among the top-50
+busiest entities.
+
 _(Real MySQL numbers land once Docker/a MySQL server is available. M1
 Snowflake load-throughput numbers land once the Snowflake trial account is
 set up.)_
